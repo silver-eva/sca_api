@@ -8,7 +8,7 @@ import (
 )
 
 func CreateCat(cat *models.Cat) (models.Cat,error) {
-	query := `INSERT INTO app.cat (id, name, experience, breed, salary) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	query := `INSERT INTO app.cat (id, name, experience, breed, salary) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, experience, breed, salary`
 	new_cat := models.Cat{}
 	err := database.DB.Get(&new_cat, query, uuid.New(), cat.Name, cat.Experience, cat.Breed, cat.Salary)
 	return new_cat, err
