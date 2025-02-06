@@ -1,4 +1,4 @@
-package config
+package database
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 
 var DB *sqlx.DB
 
-func ConnectDB() *sqlx.DB {
+func ConnectDB() {
 	// DB connection string
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable", 
@@ -22,12 +22,12 @@ func ConnectDB() *sqlx.DB {
 		os.Getenv("DB_NAME"),
 	)
 
-	DB, err := sqlx.Connect("postgres", dsn)
+	var err error
+	DB, err = sqlx.Connect("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
 	log.Println("Connected to the database!")
 
-	return DB
 }
