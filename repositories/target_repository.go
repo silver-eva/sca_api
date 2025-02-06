@@ -1,16 +1,20 @@
 package repositories
 
 import (
+	"database/sql"
 	"sca_api/database"
 	"sca_api/models"
 
 	"github.com/google/uuid"
 )
 
-func CreateTarget(target *models.Target) error {
-	query := `INSERT INTO app.target (id, name, country, notes, complited) VALUES ($1, $2, $3, $4, $5)`
-	_, err := database.DB.Exec(query, uuid.New(), target.Name, target.Country, target.Notes, target.Completed)
-	return err
+func CreateTarget(tx *sql.Tx, target *models.Target) (uuid.UUID, error) {
+	query := `INSERT INTO app.target (id, name, country, notes, complited) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	res := tx.QueryRow(query, uuid.New(), target.Name, target.Country, target.Notes, target.Completed)
+
+	var id uuid.UUID
+	err := res.Scan(&id)
+	return id, err
 }
 
 func GetTargets() ([]models.Target, error) {
@@ -19,9 +23,9 @@ func GetTargets() ([]models.Target, error) {
 	return targets, err
 }
 
-func GetTargetByID(id uuid.UUID) (models.Target, error) {
+func GetTargetByName(name string) (models.Target, error) {
 	var target models.Target
-	err := database.DB.Get(&target, "SELECT * FROM app.target WHERE id = $1", id)
+	err := database.DB.Get(&target, "SELECT * FROM app.target WHERE name = $1", name)
 	return target, err
 }
 

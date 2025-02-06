@@ -75,3 +75,76 @@ func UpdateMissionCompletion(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(200)
 }
+
+func AssignCatToMission(c *fiber.Ctx) error {
+	var data struct {
+		CatID uuid.UUID `json:"cat_id"`
+	}
+
+	if err := c.BodyParser(&data); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
+	}
+
+	missionID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid mission ID"})
+	}
+
+	err = repositories.AssignCatToMission(missionID, data.CatID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.SendStatus(200)
+}
+
+// func AddTargetToMission(c *fiber.Ctx) error {
+// 	var data struct {
+// 		TargetID uuid.UUID `json:"target_id"`
+// 	}
+
+// 	if err := c.BodyParser(&data); err != nil {
+// 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
+// 	}
+
+// 	missionID, err := uuid.Parse(c.Params("id"))
+// 	if err != nil {
+// 		return c.Status(400).JSON(fiber.Map{"error": "Invalid mission ID"})
+// 	}
+
+// 	err = repositories.AddTargetToMission(missionID, data.TargetID)
+// 	if err != nil {
+// 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+// 	}
+// 	return c.SendStatus(200)
+// }
+
+func RemoveTargetFromMission(c *fiber.Ctx) error {
+	missionID, err := uuid.Parse(c.Params("mission_id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid mission ID"})
+	}
+
+	targetID, err := uuid.Parse(c.Params("target_id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid target ID"})
+	}
+
+	err = repositories.RemoveTargetFromMission(missionID, targetID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.SendStatus(200)
+}
+
+func MarkTargetCompleted(c *fiber.Ctx) error {
+	targetID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid target ID"})
+	}
+
+	err = repositories.UpdateTargetCompletion(targetID, true)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.SendStatus(200)
+}
