@@ -22,6 +22,7 @@ func ConnectDB() {
 		os.Getenv("DB_NAME"),
 	)
 
+	//dsn = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 	var err error
 	DB, err = sqlx.Connect("postgres", dsn)
 	if err != nil {
