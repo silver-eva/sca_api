@@ -6,20 +6,37 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func setupCatsRoutes(app fiber.Router) {
+	app.Post("/cats", handlers.CreateCat)
+	app.Get("/cats", handlers.GetCats)
+	app.Get("/cats/:id", handlers.GetCat)
+	app.Delete("/cats/:id", handlers.DeleteCat)
+	app.Put("/cats/:id/salary", handlers.UpdateCatSalary)
+}
+
+func setupMissionsRoutes(app fiber.Router) {
+	app.Post("/missions", handlers.CreateMission)
+	app.Get("/missions", handlers.GetMissions)
+	app.Get("/missions/:id", handlers.GetMission)
+	app.Delete("/missions/:id", handlers.DeleteMission)
+	app.Put("/missions/:id/complited", handlers.UpdateMissionCompletion)
+}
+
+func setupTargetsRoutes(app fiber.Router) {
+	// app.Post("/targets", handlers.CreateTarget)
+	// app.Get("/targets", handlers.GetTargets)
+	app.Put("/targets/:id/notes", handlers.UpdateTargetNotes)
+	app.Put("/targets/:id/complited", handlers.UpdateTargetCompletion)
+}
+
 func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
 
 	// Spy Cats
-	api.Post("/cats", handlers.CreateCat)
-	api.Get("/cats", handlers.GetCats)
-	api.Get("/cats/:id", handlers.GetCat)
-	api.Delete("/cats/:id", handlers.DeleteCat)
-	api.Put("/cats/:id/salary", handlers.UpdateCatSalary)
-
+	setupCatsRoutes(api)
 	// Missions
-	// api.Post("/missions", handlers.CreateMission)
-	// api.Get("/missions", handlers.GetMissions)
-	// api.Get("/missions/:id", handlers.GetMission)
-	// api.Delete("/missions/:id", handlers.DeleteMission)
-	// api.Put("/missions/:id/complited", handlers.UpdateMissionComplited)
+	setupMissionsRoutes(api)
+	// Targets
+	setupTargetsRoutes(api)
+
 }
