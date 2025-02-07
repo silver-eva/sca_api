@@ -50,7 +50,7 @@ definitions:
     - country
     - name
     type: object
-host: localhost:8000
+host: 0.0.0.0:8000
 info:
   contact: {}
   description: A simple REST API for managing spy cats and missions
