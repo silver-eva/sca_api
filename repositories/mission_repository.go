@@ -42,13 +42,13 @@ func CreateMission(mission *models.Mission) error {
 		existingTarget, err := GetTargetByName(target.Name)
 		if err != nil {
 			if err.Error() != "sql: no rows in result set" {
-				return err	
+				return err
 			}
 		}
 		log.Infof("Existing target: %v", existingTarget)
 		// Create target if it doesn't exist
 		if existingTarget.ID == uuid.Nil {
-			target_id, err := CreateTarget(tx, target)
+			target_id, err := CreateTargetSafe(tx, target)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -58,21 +58,64 @@ func CreateMission(mission *models.Mission) error {
 		} else {
 			target.ID = existingTarget.ID
 		}
-		
+
 		// Attach target to mission
-		err = AddTargetToMission(tx, mission.ID, target.ID)
+		err = AddTargetToMissionSafe(tx, mission.ID, target.ID)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
-	
+
 	return tx.Commit()
 }
 
-func GetMissions() ([]models.Mission, error) {
-	var missions []models.Mission
-	err := database.DB.Select(&missions, "SELECT * FROM app.mission")
+func GetMissions(limit, offset int) ([]models.FullMission, error) {
+	var missions []models.FullMission
+	err := database.DB.Select(&missions, `
+WITH mission_data AS (
+    SELECT 
+        m.id AS mission_id,
+        m.name AS mission_name,
+        m.complited AS mission_completed
+    FROM app.mission m
+),
+cats_data AS (
+    SELECT 
+        mc.mission_id,
+        json_agg(json_build_object(
+            'id', c.id,
+            'name', c.name
+        )) AS cats
+    FROM app.mission_cats mc
+    JOIN app.cat c ON mc.cat_id = c.id
+    GROUP BY mc.mission_id
+),
+targets_data AS (
+    SELECT 
+        mt.mission_id,
+        json_agg(json_build_object(
+            'id', t.id,
+            'name', t.name,
+            'notes', t.notes,
+            'completed', t.complited,
+			'country', t.country
+        )) AS targets
+    FROM app.mission_targets mt
+    JOIN app.target t ON mt.target_id = t.id
+    GROUP BY mt.mission_id
+)
+SELECT 
+    md.mission_id AS id,
+    md.mission_name AS name,
+    md.mission_completed AS complited,
+    COALESCE(cd.cats, '[]') AS cats,
+    COALESCE(td.targets, '[]') AS targets
+FROM mission_data md
+LEFT JOIN cats_data cd ON md.mission_id = cd.mission_id
+LEFT JOIN targets_data td ON md.mission_id = td.mission_id
+Limit $1 Offset $2;
+`, limit, offset)
 	return missions, err
 }
 
@@ -105,7 +148,8 @@ targets_data AS (
             'id', t.id,
             'name', t.name,
             'notes', t.notes,
-            'completed', t.complited
+            'completed', t.complited,
+			'country', t.country
         )) AS targets
     FROM app.mission_targets mt
     JOIN app.target t ON mt.target_id = t.id
@@ -137,7 +181,12 @@ func UpdateMissionCompletion(id uuid.UUID, completed bool) error {
 
 func AssignCatToMission(missionID, catID uuid.UUID) error {
 	var completed bool
-	err := database.DB.Get(&completed, "SELECT complited FROM app.mission WHERE id = $1", missionID)
+	var miss_count int
+
+	mission_completed := "SELECT complited FROM app.mission WHERE id = $1"
+	cat_is_busy := "SELECT COUNT(*) FROM app.mission_cats WHERE cat_id = $1"
+
+	err := database.DB.Get(&completed, mission_completed, missionID)
 	if err != nil {
 		return err
 	}
@@ -145,12 +194,20 @@ func AssignCatToMission(missionID, catID uuid.UUID) error {
 		return fmt.Errorf("mission is already completed, cannot assign cat")
 	}
 
+	err = database.DB.Get(&miss_count, cat_is_busy, catID)
+	if err != nil {
+		return err
+	}
+	if miss_count > 0 {
+		return fmt.Errorf("cat is already assigned to another mission, cannot assign")
+	}
+
 	query := `INSERT INTO app.mission_cats (id, mission_id, cat_id) VALUES ($1, $2, $3)`
 	_, err = database.DB.Exec(query, uuid.New(), missionID, catID)
 	return err
 }
 
-func AddTargetToMission(tx *sql.Tx, missionID, targetID uuid.UUID) error {
+func AddTargetToMissionSafe(tx *sql.Tx, missionID, targetID uuid.UUID) error {
 	res := tx.QueryRow("SELECT complited FROM app.mission WHERE id = $1", missionID)
 
 	var completed bool
@@ -166,6 +223,19 @@ func AddTargetToMission(tx *sql.Tx, missionID, targetID uuid.UUID) error {
 	query := `INSERT INTO app.mission_targets (id, mission_id, target_id) VALUES ($1, $2, $3)`
 	_, err = tx.Exec(query, uuid.New(), missionID, targetID)
 	return err
+}
+
+func AddTargetToMission(missionID, targetID uuid.UUID) error {
+	tx, err := database.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	err = AddTargetToMissionSafe(tx, missionID, targetID)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func RemoveTargetFromMission(missionID, targetID uuid.UUID) error {
