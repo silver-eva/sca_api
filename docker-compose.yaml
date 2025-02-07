@@ -21,14 +21,13 @@ services:
     container_name: app_srv
     restart: unless-stopped
     ports:
-      - ${APP_PORT:-8080}:${APP_PORT:-8080}
+      - 8000:8000
     environment:
       DB_USER: ${DB_USER:-postgres}
       DB_PASS: ${DB_PASS:-postgres}
       DB_NAME: ${DB_NAME:-postgres}
       DB_HOST: ${DB_HOST:-db}
       DB_PORT: ${DB_PORT:-5432}
-      APP_PORT: ${APP_PORT:-8080}
     depends_on:
       - db
     networks:
