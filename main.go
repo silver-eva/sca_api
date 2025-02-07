@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"sca_api/database"
 	"sca_api/routes"
@@ -38,7 +37,5 @@ func main() {
 
 	routes.SetupRoutes(app)
 
-	log.Fatal(app.Listen("0.0.0.0:" + os.Getenv("APP_PORT")))
+	log.Fatal(app.Listen("0.0.0.0:8000"))
 }
-
-// "8000"))//
