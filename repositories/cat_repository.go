@@ -7,16 +7,16 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateCat(cat *models.Cat) (models.Cat,error) {
+func CreateCat(cat *models.Cat) (models.Cat, error) {
 	query := `INSERT INTO app.cat (id, name, experience, breed, salary) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, experience, breed, salary`
 	new_cat := models.Cat{}
 	err := database.DB.Get(&new_cat, query, uuid.New(), cat.Name, cat.Experience, cat.Breed, cat.Salary)
 	return new_cat, err
 }
 
-func GetCats() ([]models.Cat, error) {
+func GetCats(limit, page int) ([]models.Cat, error) {
 	var cats []models.Cat
-	err := database.DB.Select(&cats, "SELECT * FROM app.cat")
+	err := database.DB.Select(&cats, "SELECT * FROM app.cat ORDER BY experience DESC limit $1 offset $2", limit, page)
 	return cats, err
 }
 

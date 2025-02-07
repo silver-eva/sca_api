@@ -19,16 +19,14 @@ func setupMissionsRoutes(app fiber.Router) {
 	app.Get("/missions", handlers.GetMissions)
 	app.Get("/missions/:id", handlers.GetMission)
 	app.Delete("/missions/:id", handlers.DeleteMission)
-	app.Put("/missions/:id/complited", handlers.UpdateMissionCompletion)
+	app.Post("/missions/:id/complete", handlers.UpdateMissionCompletion)
 
-	app.Put("/missions/:id/cats", handlers.AssignCatToMission)
-	// app.Put("/missions/:id/targets", handlers.AddTargetToMission)
-	app.Delete("/missions/:mission_id/targets/:target_id", handlers.RemoveTargetFromMission)
-}
+	app.Post("/missions/:mid/cats/:cid", handlers.AssignCatToMission)
+	app.Put("/missions/:mid/targets", handlers.AddTargetToMission)
+	app.Delete("/missions/:mid/targets/:tid", handlers.RemoveTargetFromMission)
 
-func setupTargetsRoutes(app fiber.Router) {
-	app.Put("/targets/:id/notes", handlers.UpdateTargetNotes)
-	app.Put("/targets/:id/complited", handlers.UpdateTargetCompletion)
+	app.Post("/missions/:mid/targets/:tid/complete", handlers.UpdateTargetCompletion)
+	app.Put("/missions/:mid/targets/:tid/note", handlers.UpdateTargetNotes)
 }
 
 func SetupRoutes(app *fiber.App) {
@@ -38,7 +36,5 @@ func SetupRoutes(app *fiber.App) {
 	setupCatsRoutes(api)
 	// Missions
 	setupMissionsRoutes(api)
-	// Targets
-	setupTargetsRoutes(api)
 
 }
